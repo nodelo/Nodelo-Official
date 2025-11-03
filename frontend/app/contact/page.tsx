@@ -42,9 +42,10 @@ export default function ContactPage() {
     },
     {
       icon: FiMessageCircle,
-      title: "Quick Response",
-      description: "We reply within 2 business days",
-      value: "Usually within 24 hours",
+      title: "Live Chat",
+      description: "Chat with us in real-time",
+      value: "Available now",
+      link: "/chat",
       gradient: "from-green-500 to-teal-500",
     },
     {

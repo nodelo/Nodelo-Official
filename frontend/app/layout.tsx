@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const inter = Inter({
@@ -27,6 +28,9 @@ export const metadata: Metadata = {
     title: "Nodelo — Build product-grade apps. Fast.",
     description: "Nodelo builds end-to-end web apps for startups and teams.",
   },
+  icons: {
+    icon: "/logo3.png",
+  },
 }
 
 export default function RootLayout({
@@ -37,16 +41,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans`}>
-        <Suspense>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-nodelo-500 focus:text-white focus:rounded-md"
-          >
-            Skip to content
-          </a>
-        </Suspense>
-        {children}
-        <Analytics />
+        <Providers>
+          <Suspense>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-nodelo-500 focus:text-white focus:rounded-md"
+            >
+              Skip to content
+            </a>
+          </Suspense>
+          {children}
+          <Analytics />
+        </Providers>
       </body>
     </html>
   )

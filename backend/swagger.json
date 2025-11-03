@@ -1,0 +1,1801 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Nodelo Backend API",
+    "description": "RESTful API for Nodelo website backend. Includes contact form submissions, authentication, real-time chat with file uploads, and admin management endpoints. Features Socket.io for real-time messaging and Cloudinary for file storage.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Nodelo Team",
+      "email": "hello@nodelo.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5050",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.nodelo.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "General",
+      "description": "General endpoints"
+    },
+    {
+      "name": "Authentication",
+      "description": "Admin authentication endpoints"
+    },
+    {
+      "name": "Contacts",
+      "description": "Contact form submission endpoints"
+    },
+    {
+      "name": "Chats",
+      "description": "Real-time chat endpoints with file uploads. Supports Socket.io for live messaging."
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["General"],
+        "summary": "Welcome message",
+        "description": "Returns a welcome message with API information",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Welcome to Nodelo API"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "running"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["General"],
+        "summary": "Health check",
+        "description": "Returns the health status of the API",
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "healthy"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2024-01-15T10:30:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Admin registration",
+        "description": "Register a new admin user. Returns JWT token upon successful registration.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@nodelo.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6,
+                    "example": "password123"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100,
+                    "example": "John Admin",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or user already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Admin login",
+        "description": "Authenticate admin user and receive JWT token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@nodelo.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6,
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get current user",
+        "description": "Get information about the currently authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contacts": {
+      "post": {
+        "tags": ["Contacts"],
+        "summary": "Create contact submission",
+        "description": "Submit a new contact form. This is a public endpoint that sends emails to admin and user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "message"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "example": "John Doe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com"
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Acme Inc",
+                    "nullable": true
+                  },
+                  "projectType": {
+                    "type": "string",
+                    "enum": ["starter-site", "mvp-web-app", "dapp-contract", "support-ops", "other"],
+                    "example": "mvp-web-app",
+                    "nullable": true
+                  },
+                  "budget": {
+                    "type": "string",
+                    "enum": ["under-1k", "1k-5k", "5k-10k", "10k-25k", "25k-plus"],
+                    "example": "5k-10k",
+                    "nullable": true
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 5000,
+                    "example": "I'm interested in building a web application for my business."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contact submission created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Contact form submitted successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "507f1f77bcf86cd799439011"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "John Doe"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "john.doe@example.com"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "Get all contacts",
+        "description": "Retrieve all contact submissions with pagination. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["new", "replied", "archived"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page (default: 20)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of contacts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Contact"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contacts/{id}": {
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "Get contact by ID",
+        "description": "Retrieve a single contact submission by ID. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Contact ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contact ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Contact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Contacts"],
+        "summary": "Update contact",
+        "description": "Update a contact submission (currently supports status update). Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Contact ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["new", "replied", "archived"],
+                    "example": "replied"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contact updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Contact updated successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or invalid contact ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Contact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Contacts"],
+        "summary": "Delete contact",
+        "description": "Delete a contact submission. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Contact ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Contact deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contact ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Contact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/from-contact": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Create chat from contact",
+        "description": "Create a new chat conversation from an existing contact submission. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["contactId"],
+                "properties": {
+                  "contactId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011"
+                  },
+                  "adminId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439012",
+                    "nullable": true,
+                    "description": "Admin ID to assign. Defaults to authenticated admin."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chat created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Chat created successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Chat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Contact or admin not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Create new chat",
+        "description": "Create a new chat conversation. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userName", "userEmail"],
+                "properties": {
+                  "userName": {
+                    "type": "string",
+                    "example": "John Doe"
+                  },
+                  "userEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john@example.com"
+                  },
+                  "adminId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439012",
+                    "nullable": true,
+                    "description": "Admin ID to assign. Defaults to authenticated admin."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chat created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Chat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Chats"],
+        "summary": "Get all chats",
+        "description": "Retrieve all chat conversations with pagination and filtering. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by chat status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "resolved", "archived"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Chat"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/{id}": {
+      "get": {
+        "tags": ["Chats"],
+        "summary": "Get chat with messages",
+        "description": "Retrieve a single chat conversation with all messages. Supports optional authentication for users.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for messages",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Messages per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat details with messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "chat": {
+                          "$ref": "#/components/schemas/Chat"
+                        },
+                        "messages": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Message"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/Pagination"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/message": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Send message (public)",
+        "description": "Send a message to a chat. Supports file uploads (images, videos, PDFs). This is a public endpoint for users.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["chatId", "senderName", "userEmail"],
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011"
+                  },
+                  "content": {
+                    "type": "string",
+                    "example": "Hello, I need help with my project"
+                  },
+                  "senderName": {
+                    "type": "string",
+                    "example": "John Doe"
+                  },
+                  "userEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john@example.com"
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Files to upload (max 5, 50MB each). Supported: images, videos, PDFs"
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["chatId"],
+                "properties": {
+                  "chatId": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "senderName": {
+                    "type": "string"
+                  },
+                  "userEmail": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/{id}/message": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Send message to specific chat",
+        "description": "Send a message to a specific chat. Supports file uploads. Authentication optional (for users).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully"
+          }
+        }
+      }
+    },
+    "/api/chats/reply-contact": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Admin reply to contact",
+        "description": "Reply to a contact form submission. Creates chat if needed and sends email notification to user. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["contactId", "message"],
+                "properties": {
+                  "contactId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011"
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Thank you for your inquiry. We'll get back to you soon."
+                  },
+                  "chatId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Existing chat ID if chat already exists"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reply sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Reply sent successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "$ref": "#/components/schemas/Message"
+                        },
+                        "chat": {
+                          "$ref": "#/components/schemas/Chat"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/user/{userEmail}": {
+      "get": {
+        "tags": ["Chats"],
+        "summary": "Get user's chats",
+        "description": "Get all chats for a specific user by email address.",
+        "parameters": [
+          {
+            "name": "userEmail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's chats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Chat"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats/mark-read": {
+      "post": {
+        "tags": ["Chats"],
+        "summary": "Mark messages as read",
+        "description": "Mark all unread messages in a chat as read. Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["chatId"],
+                "properties": {
+                  "chatId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Messages marked as read"
+          }
+        }
+      }
+    },
+    "/api/chats/{id}/status": {
+      "patch": {
+        "tags": ["Chats"],
+        "summary": "Update chat status",
+        "description": "Update the status of a chat (active, resolved, archived). Requires authentication.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "resolved", "archived"],
+                    "example": "resolved"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Chat"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token obtained from /api/auth/login endpoint. Include in Authorization header as: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com"
+          },
+          "company": {
+            "type": "string",
+            "nullable": true,
+            "example": "Acme Inc"
+          },
+          "projectType": {
+            "type": "string",
+            "enum": ["starter-site", "mvp-web-app", "dapp-contract", "support-ops", "other"],
+            "nullable": true,
+            "example": "mvp-web-app"
+          },
+          "budget": {
+            "type": "string",
+            "enum": ["under-1k", "1k-5k", "5k-10k", "10k-25k", "25k-plus"],
+            "nullable": true,
+            "example": "5k-10k"
+          },
+          "message": {
+            "type": "string",
+            "example": "I'm interested in building a web application for my business."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["new", "replied", "archived"],
+            "default": "new",
+            "example": "new"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "default": false,
+            "example": true
+          },
+          "chatId": {
+            "type": "string",
+            "nullable": true,
+            "example": "507f1f77bcf86cd799439013",
+            "description": "Linked chat conversation ID"
+          },
+          "repliedBy": {
+            "type": "string",
+            "nullable": true,
+            "example": "507f1f77bcf86cd799439014",
+            "description": "Admin user ID who replied"
+          },
+          "replyCount": {
+            "type": "integer",
+            "default": 0,
+            "example": 2,
+            "description": "Number of admin replies"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        },
+        "required": ["name", "email", "message", "status"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@nodelo.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "user"],
+            "example": "admin"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Admin User"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Login successful"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/User"
+              },
+              "token": {
+                "type": "string",
+                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              }
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "example": 20
+          },
+          "total": {
+            "type": "integer",
+            "example": 100
+          },
+          "pages": {
+            "type": "integer",
+            "example": 5
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "Error message description"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "example": ["Email is required", "Password must be at least 6 characters"]
+          },
+          "message": {
+            "type": "string",
+            "nullable": true,
+            "example": "Additional error details (development only)"
+          }
+        }
+      },
+      "Chat": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "contactId": {
+            "type": "string",
+            "nullable": true,
+            "example": "507f1f77bcf86cd799439012",
+            "description": "Linked contact submission ID"
+          },
+          "userId": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "User identifier (usually email)"
+          },
+          "userName": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "userEmail": {
+            "type": "string",
+            "format": "email",
+            "example": "john@example.com"
+          },
+          "adminId": {
+            "type": "string",
+            "nullable": true,
+            "example": "507f1f77bcf86cd799439013",
+            "description": "Assigned admin user ID"
+          },
+          "adminName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Admin User",
+            "description": "Name of the admin handling this chat"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "resolved", "archived"],
+            "default": "active",
+            "example": "active"
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "lastMessageBy": {
+            "type": "string",
+            "enum": ["user", "admin"],
+            "example": "user"
+          },
+          "unreadCount": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "integer",
+                "example": 2
+              },
+              "admin": {
+                "type": "integer",
+                "example": 5
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "chatId": {
+            "type": "string",
+            "example": "507f1f77bcf86cd799439012"
+          },
+          "senderType": {
+            "type": "string",
+            "enum": ["user", "admin"],
+            "example": "user"
+          },
+          "senderId": {
+            "type": "string",
+            "nullable": true,
+            "example": "507f1f77bcf86cd799439013",
+            "description": "Admin user ID if senderType is admin"
+          },
+          "senderName": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "content": {
+            "type": "string",
+            "example": "Hello, I need help with my project",
+            "nullable": true
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://res.cloudinary.com/.../image.jpg"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["image", "video", "pdf", "document"],
+                  "example": "image"
+                },
+                "fileName": {
+                  "type": "string",
+                  "example": "project-screenshot.png"
+                },
+                "fileSize": {
+                  "type": "integer",
+                  "example": 1024000,
+                  "description": "File size in bytes"
+                },
+                "publicId": {
+                  "type": "string",
+                  "example": "nodelo/messages/abc123",
+                  "description": "Cloudinary public ID"
+                }
+              }
+            },
+            "description": "File attachments (images, videos, PDFs)"
+          },
+          "isRead": {
+            "type": "boolean",
+            "default": false,
+            "example": false
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "example": "2024-01-15T10:35:00.000Z"
+          },
+          "isReplyToContact": {
+            "type": "boolean",
+            "default": false,
+            "example": false,
+            "description": "True if this is an admin reply to a contact form"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "default": false,
+            "example": true,
+            "description": "True if email notification was sent"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      }
+    }
+  }
+}
+

@@ -19,7 +19,7 @@ npm install
 PORT=3000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/nodelo
-CORS_ORIGIN=http://localhost:3001
+CORS_ORIGIN=http://localhost:3000
 ```
 
 3. Start the development server:

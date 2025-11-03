@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { FiSend, FiCheck, FiLoader } from "react-icons/fi"
+import api from "@/lib/api"
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -57,24 +58,16 @@ export default function ContactForm() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await api.post('/api/contacts', {
           name: formData.name,
           email: formData.email,
           company: formData.company || undefined,
           projectType: formData.projectType || undefined,
           budget: formData.budget || undefined,
           message: formData.message,
-        }),
       })
 
-      const data = await response.json()
-
-      if (response.ok && data.success) {
+      if (response.success) {
         setIsSubmitted(true)
         setFormData({
           name: "",
@@ -86,7 +79,7 @@ export default function ContactForm() {
           privacy: false,
         })
       } else {
-        setErrors({ submit: data.error || "Something went wrong. Please try again." })
+        setErrors({ submit: response.error || "Something went wrong. Please try again." })
       }
     } catch (error) {
       console.error("Form submission error:", error)
