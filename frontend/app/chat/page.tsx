@@ -32,6 +32,24 @@ interface Chat {
   status: string
 }
 
+interface SendMessageResponse {
+  chatId?: string
+  _id?: string
+  [key: string]: any
+}
+
+interface SendMessageApiResponse {
+  success: boolean
+  data?: SendMessageResponse
+  chat?: {
+    _id: string
+    userName: string
+    userEmail: string
+    status: string
+  }
+  error?: string
+}
+
 export default function ChatPage() {
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
@@ -127,7 +145,7 @@ export default function ChatPage() {
       formData.append("userName", userName.trim())
       formData.append("userEmail", userEmail.trim())
 
-      const response = await api.post("/api/chats/message", formData, true)
+      const response = await api.post<SendMessageResponse>("/api/chats/message", formData, true) as SendMessageApiResponse
 
       if (response.success && response.data) {
         // Get chatId from response (either from chat object or data.chatId)

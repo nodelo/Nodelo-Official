@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import ProtectedRoute from "@/components/admin/ProtectedRoute"
 import AdminLayout from "@/components/admin/AdminLayout"
@@ -53,7 +53,7 @@ interface Chat {
   contactId?: string
 }
 
-export default function ChatsPage() {
+function ChatsPageContent() {
   const searchParams = useSearchParams()
   const [chats, setChats] = useState<Chat[]>([])
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null)
@@ -612,6 +612,25 @@ export default function ChatsPage() {
         </div>
       </AdminLayout>
     </ProtectedRoute>
+  )
+}
+
+export default function ChatsPage() {
+  return (
+    <Suspense fallback={
+      <ProtectedRoute>
+        <AdminLayout>
+          <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+            <div className="text-center text-nodelo-600">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-nodelo-500 mx-auto mb-4"></div>
+              <p>Loading chats...</p>
+            </div>
+          </div>
+        </AdminLayout>
+      </ProtectedRoute>
+    }>
+      <ChatsPageContent />
+    </Suspense>
   )
 }
 
